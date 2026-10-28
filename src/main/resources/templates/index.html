@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Julia Drake Photography — Book a Session</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<header>
+    <h1><a th:href="@{/}">Julia Drake Photography</a></h1>
+    <nav>
+        <a th:href="@{/}">Book a session</a>
+        <a th:href="@{/dashboard}">Photographer dashboard</a>
+    </nav>
+</header>
+<main>
+    <h2>Book a session</h2>
+    <p>Natural-light portraits in and around Grove City, PA. Pick a package below, tell us a little about what you have in mind, and we'll be in touch to confirm your date.</p>
+
+    <div class="package-grid">
+        <div class="card" th:each="pkg : ${packages}">
+            <h3 th:text="${pkg.name}">Couples</h3>
+            <p class="price">From $<span th:text="${pkg.basePrice}">200</span></p>
+            <p th:text="${pkg.description}">Description</p>
+        </div>
+    </div>
+
+    <form th:action="@{/book}" method="post" class="card">
+        <h3>Request a booking</h3>
+        <label for="name">Your name</label>
+        <input id="name" name="name" required>
+
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" required>
+
+        <label for="phone">Phone (optional)</label>
+        <input id="phone" name="phone" type="tel">
+
+        <label for="packageId">Session package</label>
+        <select id="packageId" name="packageId" required>
+            <option th:each="pkg : ${packages}" th:value="${pkg.id}"
+                    th:text="${pkg.name + ' — from $' + pkg.basePrice}">Couples</option>
+        </select>
+
+        <label for="sessionDateTime">Preferred date &amp; time</label>
+        <input id="sessionDateTime" name="sessionDateTime" type="datetime-local" required>
+
+        <label for="location">Location idea (optional)</label>
+        <input id="location" name="location" placeholder="e.g. Jennings prairie, downtown Grove City">
+
+        <label for="message">Anything you'd like us to know? (optional)</label>
+        <textarea id="message" name="message"></textarea>
+
+        <button type="submit">Send booking request</button>
+        <p class="muted">This sends an inquiry — your date is confirmed once we reply.</p>
+    </form>
+</main>
+<footer>Studio Manager · demo data is fictional</footer>
+</body>
+</html>

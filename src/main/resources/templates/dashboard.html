@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Dashboard — Studio Manager</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<header>
+    <h1><a th:href="@{/}">Julia Drake Photography</a></h1>
+    <nav>
+        <a th:href="@{/}">Book a session</a>
+        <a th:href="@{/dashboard}">Photographer dashboard</a>
+    </nav>
+</header>
+<main>
+    <h2>Projects</h2>
+    <p class="muted">All bookings, sorted by session date. Demo projects are fictional.</p>
+
+    <form method="get" th:action="@{/dashboard}">
+        <label for="status">Filter by status</label>
+        <select id="status" name="status" onchange="this.form.submit()">
+            <option value="">All statuses</option>
+            <option th:each="s : ${statuses}" th:value="${s}" th:text="${s}"
+                    th:selected="${s == selectedStatus}">INQUIRY</option>
+        </select>
+    </form>
+
+    <table th:if="${!projects.isEmpty()}">
+        <thead>
+        <tr><th>Client</th><th>Package</th><th>Session</th><th>Status</th><th>Gallery due</th><th></th></tr>
+        </thead>
+        <tbody>
+        <tr th:each="p : ${projects}">
+            <td th:text="${p.client.name}">Emma &amp; Liam</td>
+            <td th:text="${p.sessionPackage.name}">Couples</td>
+            <td th:text="${p.sessionDateTime != null ? #temporals.format(p.sessionDateTime, 'MMM d, yyyy h:mm a') : '—'}">date</td>
+            <td><span class="badge" th:classappend="${p.status}" th:text="${p.status}">BOOKED</span></td>
+            <td th:text="${p.galleryDueDate != null ? p.galleryDueDate : '—'}">—</td>
+            <td><a th:href="@{'/projects/' + ${p.id}}">Open →</a></td>
+        </tr>
+        </tbody>
+    </table>
+    <p th:if="${projects.isEmpty()}" class="muted">No projects match this filter yet.</p>
+</main>
+<footer>Studio Manager · demo data is fictional</footer>
+</body>
+</html>

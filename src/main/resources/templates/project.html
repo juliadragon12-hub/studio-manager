@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${project.client.name} + ' — Studio Manager'">Project — Studio Manager</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<header>
+    <h1><a th:href="@{/}">Julia Drake Photography</a></h1>
+    <nav>
+        <a th:href="@{/}">Book a session</a>
+        <a th:href="@{/dashboard}">Photographer dashboard</a>
+    </nav>
+</header>
+<main>
+    <p><a th:href="@{/dashboard}">← Back to dashboard</a></p>
+    <h2>
+        <span th:text="${project.client.name}">Client</span>
+        <span class="badge" th:classappend="${project.status}" th:text="${project.status}">BOOKED</span>
+    </h2>
+    <p class="muted">
+        <span th:text="${project.sessionPackage.name}">Couples</span> ·
+        <span th:text="${project.client.email}">email</span>
+        <span th:if="${project.client.phone}">· <span th:text="${project.client.phone}">phone</span></span>
+    </p>
+
+    <!-- Details -->
+    <form th:action="@{'/projects/' + ${project.id} + '/details'}" method="post" class="card">
+        <h3>Session details</h3>
+        <label for="status">Status</label>
+        <select id="status" name="status">
+            <option th:each="s : ${statuses}" th:value="${s}" th:text="${s}"
+                    th:selected="${s == project.status}">BOOKED</option>
+        </select>
+        <label for="sessionDateTime">Session date &amp; time</label>
+        <input id="sessionDateTime" name="sessionDateTime" type="datetime-local"
+               th:value="${project.sessionDateTime != null ? #temporals.format(project.sessionDateTime, 'yyyy-MM-dd''T''HH:mm') : ''}">
+        <label for="location">Location</label>
+        <input id="location" name="location" th:value="${project.location}">
+        <label for="price">Price ($)</label>
+        <input id="price" name="price" type="number" step="0.01" min="0" th:value="${project.price}">
+        <label for="galleryDueDate">Gallery due date</label>
+        <input id="galleryDueDate" name="galleryDueDate" type="date" th:value="${project.galleryDueDate}">
+        <label for="galleryDeliveredDate">Gallery delivered date</label>
+        <input id="galleryDeliveredDate" name="galleryDeliveredDate" type="date" th:value="${project.galleryDeliveredDate}">
+        <label for="notes">Notes</label>
+        <textarea id="notes" name="notes" th:text="${project.notes}"></textarea>
+        <button type="submit">Save details</button>
+    </form>
+
+    <!-- Editing pipeline -->
+    <div class="card">
+        <h3>Editing pipeline</h3>
+        <div class="pipeline">
+            <span th:each="stage : ${stages}"
+                  th:text="${stage}"
+                  th:classappend="${project.editingStage != null and stage.ordinal() <= project.editingStage.ordinal() ? 'done' : ''}">CULLING</span>
+        </div>
+        <form th:action="@{'/projects/' + ${project.id} + '/stage'}" method="post">
+            <label for="editingStage">Current stage</label>
+            <select id="editingStage" name="editingStage">
+                <option th:each="stage : ${stages}" th:value="${stage}" th:text="${stage}"
+                        th:selected="${stage == project.editingStage}">EDITING</option>
+            </select>
+            <button type="submit">Update stage</button>
+        </form>
+    </div>
+
+    <!-- Agreement -->
+    <form th:action="@{'/projects/' + ${project.id} + '/agreement'}" method="post" class="card">
+        <h3>Agreement</h3>
+        <p th:if="${project.agreement == null}" class="muted">No agreement recorded yet.</p>
+        <label for="signerName">Signed by</label>
+        <input id="signerName" name="signerName" required
+               th:value="${project.agreement != null ? project.agreement.signerName : ''}">
+        <label for="signedDate">Signed date</label>
+        <input id="signedDate" name="signedDate" type="date" required
+               th:value="${project.agreement != null ? project.agreement.signedDate : ''}">
+        <label for="termsText">Terms</label>
+        <textarea id="termsText" name="termsText"
+                  th:text="${project.agreement != null ? project.agreement.termsText : 'Standard session agreement: 50% retainer to book, balance due on session day. Gallery delivered within 4 weeks.'}"></textarea>
+        <button type="submit">Save agreement</button>
+    </form>
+
+    <!-- Questionnaire -->
+    <form th:action="@{'/projects/' + ${project.id} + '/questionnaire'}" method="post" class="card">
+        <h3>Client questionnaire</h3>
+        <label for="sessionGoals">What are your goals for this session?</label>
+        <textarea id="sessionGoals" name="sessionGoals"
+                  th:text="${project.questionnaire != null ? project.questionnaire.sessionGoals : ''}"></textarea>
+        <label for="mustHaveShots">Must-have shots</label>
+        <textarea id="mustHaveShots" name="mustHaveShots"
+                  th:text="${project.questionnaire != null ? project.questionnaire.mustHaveShots : ''}"></textarea>
+        <label for="comfortNotes">Comfort notes — anything that helps you feel at ease</label>
+        <textarea id="comfortNotes" name="comfortNotes"
+                  th:text="${project.questionnaire != null ? project.questionnaire.comfortNotes : ''}"></textarea>
+        <button type="submit">Save questionnaire</button>
+    </form>
+
+    <!-- Time tracking -->
+    <div class="card">
+        <h3>Time worked — <span th:text="${project.totalMinutes}">0</span> minutes total</h3>
+        <table th:if="${!timeEntries.isEmpty()}">
+            <thead><tr><th>Activity</th><th>Start</th><th>End</th><th>Minutes</th><th></th><th></th></tr></thead>
+            <tbody>
+            <tr th:each="e : ${timeEntries}">
+                <td th:text="${e.activityType}">EDITING</td>
+                <td th:text="${#temporals.format(e.startTime, 'MMM d, h:mm a')}">start</td>
+                <td th:text="${#temporals.format(e.endTime, 'MMM d, h:mm a')}">end</td>
+                <td th:text="${e.durationMinutes}">90</td>
+                <td><span class="tag" th:if="${e.manual}">Manual</span></td>
+                <td>
+                    <form th:action="@{'/projects/' + ${project.id} + '/time-entries/' + ${e.id} + '/delete'}" method="post">
+                        <button type="submit" class="secondary" style="margin-top:0;padding:.2rem .6rem;">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+        <p th:if="${timeEntries.isEmpty()}" class="muted">No time logged yet.</p>
+
+        <div th:if="${timeError}" class="error" th:text="${timeError}">Error</div>
+        <form th:action="@{'/projects/' + ${project.id} + '/time-entries'}" method="post">
+            <h3>Add time</h3>
+            <label for="activityType">Activity</label>
+            <select id="activityType" name="activityType">
+                <option th:each="a : ${activities}" th:value="${a}" th:text="${a}">EDITING</option>
+            </select>
+            <label for="startTime">Start</label>
+            <input id="startTime" name="startTime" type="datetime-local" required>
+            <label for="endTime">End</label>
+            <input id="endTime" name="endTime" type="datetime-local" required>
+            <label><input type="checkbox" name="manual" value="true" style="width:auto;"> Logged by hand (I forgot to track it live)</label>
+            <label for="entryNotes">Notes (optional)</label>
+            <input id="entryNotes" name="notes">
+            <button type="submit">Add time entry</button>
+        </form>
+    </div>
+</main>
+<footer>Studio Manager · demo data is fictional</footer>
+</body>
+</html>

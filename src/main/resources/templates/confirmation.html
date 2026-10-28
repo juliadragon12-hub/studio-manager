@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Booking received — Julia Drake Photography</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<header>
+    <h1><a th:href="@{/}">Julia Drake Photography</a></h1>
+    <nav>
+        <a th:href="@{/}">Book a session</a>
+        <a th:href="@{/dashboard}">Photographer dashboard</a>
+    </nav>
+</header>
+<main>
+    <div class="card">
+        <h2>Thank you, <span th:text="${project.client.name}">friend</span>!</h2>
+        <p>Your booking request is in. Here's what we have:</p>
+        <ul>
+            <li><strong>Package:</strong> <span th:text="${project.sessionPackage.name}">Couples</span></li>
+            <li><strong>Preferred date:</strong> <span th:text="${#temporals.format(project.sessionDateTime, 'EEEE, MMMM d, yyyy h:mm a')}">date</span></li>
+            <li th:if="${project.location}"><strong>Location:</strong> <span th:text="${project.location}">place</span></li>
+            <li><strong>Price:</strong> from $<span th:text="${project.price}">200</span></li>
+        </ul>
+        <p>We'll email <span th:text="${project.client.email}">you</span> shortly to confirm your date and send the agreement and a short questionnaire.</p>
+        <a class="btn" th:href="@{/}">Book another session</a>
+    </div>
+</main>
+<footer>Studio Manager · demo data is fictional</footer>
+</body>
+</html>
