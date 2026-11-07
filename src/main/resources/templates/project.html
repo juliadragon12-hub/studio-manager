@@ -12,6 +12,7 @@
     <nav>
         <a th:href="@{/}">Book a session</a>
         <a th:href="@{/dashboard}">Photographer dashboard</a>
+        <a th:href="@{/admin/minis}">Mini sessions</a>
     </nav>
 </header>
 <main>
@@ -25,6 +26,43 @@
         <span th:text="${project.client.email}">email</span>
         <span th:if="${project.client.phone}">· <span th:text="${project.client.phone}">phone</span></span>
     </p>
+
+    <!-- Booking & payment summary -->
+    <div class="card" th:if="${project.bookingReference != null or project.retainerPayment != null or project.miniEvent != null}">
+        <h3>Booking &amp; payment</h3>
+        <ul class="summary">
+            <li th:if="${project.bookingReference}">
+                <strong>Booking reference:</strong> <span th:text="${project.bookingReference}">SM-2026-0007</span>
+            </li>
+            <li th:if="${project.miniEvent}">
+                <strong>Mini session:</strong> <span th:text="${project.miniEvent.title}">Autumn Mini Sessions</span>
+                — slot at <span th:text="${#temporals.format(project.sessionDateTime, 'MMM d, yyyy h:mm a')}">date</span>
+            </li>
+            <li>
+                <strong>Agreement:</strong>
+                <span th:if="${project.agreementSigned}">
+                    Signed by <span th:text="${project.agreement.signerName}">Client</span>
+                    <span th:if="${project.agreement.signedAt}"> at
+                        <span th:text="${#temporals.format(project.agreement.signedAt, 'MMM d, yyyy h:mm a')}">time</span></span>
+                    <span th:if="${project.agreement.signedAt == null and project.agreement.signedDate != null}"> on
+                        <span th:text="${project.agreement.signedDate}">date</span></span>
+                </span>
+                <span th:unless="${project.agreementSigned}">Not signed yet</span>
+            </li>
+            <li th:if="${project.retainerPayment}">
+                <strong>Retainer:</strong> $<span th:text="${project.retainerPayment.amount}">50</span> —
+                <span th:text="${project.retainerPayment.status}">PAID_DEMO</span>
+                via <span th:text="${project.retainerPayment.method}">DEMO</span>
+                <span class="tag">demo — no real payment processed</span>
+                <span th:if="${project.retainerPayment.paidAt}"> ·
+                    <span th:text="${#temporals.format(project.retainerPayment.paidAt, 'MMM d, yyyy h:mm a')}">time</span></span>
+            </li>
+            <li th:if="${project.price != null}">
+                <strong>Balance due:</strong> $<span th:text="${project.balanceDue}">150</span>
+                of $<span th:text="${project.price}">200</span>
+            </li>
+        </ul>
+    </div>
 
     <!-- Details -->
     <form th:action="@{'/projects/' + ${project.id} + '/details'}" method="post" class="card">
@@ -72,6 +110,9 @@
     <form th:action="@{'/projects/' + ${project.id} + '/agreement'}" method="post" class="card">
         <h3>Agreement</h3>
         <p th:if="${project.agreement == null}" class="muted">No agreement recorded yet.</p>
+        <p th:if="${project.agreement != null and project.agreement.signedAt != null}" class="muted">
+            E-signed online at <span th:text="${#temporals.format(project.agreement.signedAt, 'MMM d, yyyy h:mm a')}">time</span>.
+        </p>
         <label for="signerName">Signed by</label>
         <input id="signerName" name="signerName" required
                th:value="${project.agreement != null ? project.agreement.signerName : ''}">
@@ -80,7 +121,7 @@
                th:value="${project.agreement != null ? project.agreement.signedDate : ''}">
         <label for="termsText">Terms</label>
         <textarea id="termsText" name="termsText"
-                  th:text="${project.agreement != null ? project.agreement.termsText : 'Standard session agreement: 50% retainer to book, balance due on session day. Gallery delivered within 4 weeks.'}"></textarea>
+                  th:text="${project.agreement != null ? project.agreement.termsText : 'Standard session agreement: 25% retainer to book, balance due on session day. Gallery delivered within 4 weeks.'}"></textarea>
         <button type="submit">Save agreement</button>
     </form>
 

@@ -12,11 +12,13 @@
     <nav>
         <a th:href="@{/}">Book a session</a>
         <a th:href="@{/dashboard}">Photographer dashboard</a>
+        <a th:href="@{/admin/minis}">Mini sessions</a>
     </nav>
 </header>
 <main>
     <h2>Projects</h2>
-    <p class="muted">All bookings, sorted by session date. Demo projects are fictional.</p>
+    <p class="muted">All bookings, sorted by session date. Demo projects are fictional.
+        Manage mini-session events on the <a th:href="@{/admin/minis}">mini sessions</a> page.</p>
 
     <form method="get" th:action="@{/dashboard}">
         <label for="status">Filter by status</label>
@@ -29,14 +31,16 @@
 
     <table th:if="${!projects.isEmpty()}">
         <thead>
-        <tr><th>Client</th><th>Package</th><th>Session</th><th>Status</th><th>Gallery due</th><th></th></tr>
+        <tr><th>Client</th><th>Ref</th><th>Package</th><th>Session</th><th>Status</th><th>Balance due</th><th>Gallery due</th><th></th></tr>
         </thead>
         <tbody>
         <tr th:each="p : ${projects}">
             <td th:text="${p.client.name}">Emma &amp; Liam</td>
+            <td th:text="${p.bookingReference != null ? p.bookingReference : '—'}">SM-2026-0007</td>
             <td th:text="${p.sessionPackage.name}">Couples</td>
             <td th:text="${p.sessionDateTime != null ? #temporals.format(p.sessionDateTime, 'MMM d, yyyy h:mm a') : '—'}">date</td>
             <td><span class="badge" th:classappend="${p.status}" th:text="${p.status}">BOOKED</span></td>
+            <td th:text="${p.balanceDue != null ? '$' + p.balanceDue : '—'}">$150</td>
             <td th:text="${p.galleryDueDate != null ? p.galleryDueDate : '—'}">—</td>
             <td><a th:href="@{'/projects/' + ${p.id}}">Open →</a></td>
         </tr>

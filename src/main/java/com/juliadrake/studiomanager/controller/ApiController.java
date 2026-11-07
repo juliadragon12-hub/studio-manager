@@ -11,6 +11,7 @@ import com.juliadrake.studiomanager.repository.ClientRepository;
 import com.juliadrake.studiomanager.repository.ProjectRepository;
 import com.juliadrake.studiomanager.repository.SessionPackageRepository;
 import com.juliadrake.studiomanager.repository.TimeEntryRepository;
+import com.juliadrake.studiomanager.service.MiniSessionService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,6 +27,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -38,13 +40,16 @@ public class ApiController {
     private final ClientRepository clients;
     private final ProjectRepository projects;
     private final TimeEntryRepository timeEntries;
+    private final MiniSessionService miniSessions;
 
     public ApiController(SessionPackageRepository packages, ClientRepository clients,
-                         ProjectRepository projects, TimeEntryRepository timeEntries) {
+                         ProjectRepository projects, TimeEntryRepository timeEntries,
+                         MiniSessionService miniSessions) {
         this.packages = packages;
         this.clients = clients;
         this.projects = projects;
         this.timeEntries = timeEntries;
+        this.miniSessions = miniSessions;
     }
 
     @GetMapping("/packages")
@@ -127,5 +132,29 @@ public class ApiController {
         Project project = projects.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         project.setEditingStage(body.get("editingStage"));
         return projects.save(project);
+    }
+
+    // ---------- Mini-session events ----------
+
+    /** Upcoming mini-session events with per-slot availability. */
+    @GetMapping("/mini-events")
+    public List<Map<String, Object>> listMiniEvents() {
+        return miniSessions.upcomingViews().stream().map(this::miniEventJson).toList();
+    }
+
+    private Map<String, Object> miniEventJson(MiniSessionService.EventView view) {
+        Map<String, Object> json = new LinkedHashMap<>();
+        json.put("id", view.event().getId());
+        json.put("title", view.event().getTitle());
+        json.put("date", view.event().getDate());
+        json.put("startTime", view.event().getStartTime());
+        json.put("endTime", view.event().getEndTime());
+        json.put("slotLengthMinutes", view.event().getSlotLengthMinutes());
+        json.put("capacityPerSlot", view.event().getCapacityPerSlot());
+        json.put("price", view.event().getPrice());
+        json.put("location", view.event().getLocation());
+        json.put("packageName", view.event().getSessionPackage().getName());
+        json.put("slots", view.slots());
+        return json;
     }
 }

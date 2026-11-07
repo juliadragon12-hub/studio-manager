@@ -11,6 +11,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -18,6 +19,9 @@ import java.util.List;
 
 @Entity
 public class Project {
+
+    /** Retainer charged at booking time: 25% of the price, rounded to whole dollars. */
+    public static final BigDecimal RETAINER_FRACTION = new BigDecimal("0.25");
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -40,6 +44,13 @@ public class Project {
     private String notes;
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    /** Human-friendly reference given to the client, e.g. SM-2026-0007. Set by the booking flow. */
+    private String bookingReference;
+
+    /** Set when this booking took a slot in a mini-session event; null for full sessions. */
+    @ManyToOne
+    private MiniSessionEvent miniEvent;
+
     @Enumerated(EnumType.STRING)
     private EditingStage editingStage = EditingStage.CULLING;
 
@@ -51,6 +62,9 @@ public class Project {
 
     @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<TimeEntry> timeEntries = new ArrayList<>();
+
+    @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Payment> payments = new ArrayList<>();
 
     protected Project() {
     }
@@ -85,6 +99,10 @@ public class Project {
     public String getNotes() { return notes; }
     public void setNotes(String notes) { this.notes = notes; }
     public LocalDateTime getCreatedAt() { return createdAt; }
+    public String getBookingReference() { return bookingReference; }
+    public void setBookingReference(String bookingReference) { this.bookingReference = bookingReference; }
+    public MiniSessionEvent getMiniEvent() { return miniEvent; }
+    public void setMiniEvent(MiniSessionEvent miniEvent) { this.miniEvent = miniEvent; }
     public EditingStage getEditingStage() { return editingStage; }
     public void setEditingStage(EditingStage editingStage) { this.editingStage = editingStage; }
     public Agreement getAgreement() { return agreement; }
@@ -92,9 +110,45 @@ public class Project {
     public Questionnaire getQuestionnaire() { return questionnaire; }
     public void setQuestionnaire(Questionnaire questionnaire) { this.questionnaire = questionnaire; }
     public List<TimeEntry> getTimeEntries() { return timeEntries; }
+    public List<Payment> getPayments() { return payments; }
 
     /** Total minutes logged across all time entries. */
     public long getTotalMinutes() {
         return timeEntries.stream().mapToLong(TimeEntry::getDurationMinutes).sum();
+    }
+
+    /** True once an agreement with a signer name exists for this project. */
+    public boolean isAgreementSigned() {
+        return agreement != null
+                && agreement.getSignerName() != null
+                && !agreement.getSignerName().isBlank();
+    }
+
+    /** The retainer payment recorded at booking time, if any. */
+    public Payment getRetainerPayment() {
+        return payments.isEmpty() ? null : payments.get(0);
+    }
+
+    /** Sum of all recorded payments. */
+    public BigDecimal getTotalPaid() {
+        return payments.stream()
+                .map(p -> p.getAmount() == null ? BigDecimal.ZERO : p.getAmount())
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    /** Retainer due at booking: 25% of the price, rounded to whole dollars. */
+    public BigDecimal getRetainerDue() {
+        if (price == null) {
+            return null;
+        }
+        return price.multiply(RETAINER_FRACTION).setScale(0, RoundingMode.HALF_UP);
+    }
+
+    /** Price minus everything paid so far; null when no price is set. */
+    public BigDecimal getBalanceDue() {
+        if (price == null) {
+            return null;
+        }
+        return price.subtract(getTotalPaid());
     }
 }

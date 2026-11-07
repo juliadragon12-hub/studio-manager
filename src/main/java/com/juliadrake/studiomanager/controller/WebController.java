@@ -3,6 +3,7 @@ package com.juliadrake.studiomanager.controller;
 import com.juliadrake.studiomanager.model.Agreement;
 import com.juliadrake.studiomanager.model.Client;
 import com.juliadrake.studiomanager.model.EditingStage;
+import com.juliadrake.studiomanager.model.MiniSessionEvent;
 import com.juliadrake.studiomanager.model.Project;
 import com.juliadrake.studiomanager.model.ProjectStatus;
 import com.juliadrake.studiomanager.model.Questionnaire;
@@ -10,13 +11,18 @@ import com.juliadrake.studiomanager.model.SessionPackage;
 import com.juliadrake.studiomanager.model.TimeEntry;
 import com.juliadrake.studiomanager.model.ActivityType;
 import com.juliadrake.studiomanager.repository.ClientRepository;
+import com.juliadrake.studiomanager.repository.MiniSessionEventRepository;
 import com.juliadrake.studiomanager.repository.ProjectRepository;
 import com.juliadrake.studiomanager.repository.SessionPackageRepository;
 import com.juliadrake.studiomanager.repository.TimeEntryRepository;
+import com.juliadrake.studiomanager.service.BookingException;
+import com.juliadrake.studiomanager.service.BookingService;
+import com.juliadrake.studiomanager.service.MiniSessionService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -25,6 +31,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 
 /** Server-rendered pages: public booking flow + photographer dashboard. */
@@ -35,13 +42,21 @@ public class WebController {
     private final ClientRepository clients;
     private final ProjectRepository projects;
     private final TimeEntryRepository timeEntries;
+    private final MiniSessionEventRepository miniEvents;
+    private final BookingService bookingService;
+    private final MiniSessionService miniSessions;
 
     public WebController(SessionPackageRepository packages, ClientRepository clients,
-                         ProjectRepository projects, TimeEntryRepository timeEntries) {
+                         ProjectRepository projects, TimeEntryRepository timeEntries,
+                         MiniSessionEventRepository miniEvents, BookingService bookingService,
+                         MiniSessionService miniSessions) {
         this.packages = packages;
         this.clients = clients;
         this.projects = projects;
         this.timeEntries = timeEntries;
+        this.miniEvents = miniEvents;
+        this.bookingService = bookingService;
+        this.miniSessions = miniSessions;
     }
 
     // ---------- Public booking ----------
@@ -49,9 +64,11 @@ public class WebController {
     @GetMapping("/")
     public String bookingPage(Model model) {
         model.addAttribute("packages", packages.findByActiveTrueOrderByBasePriceAsc());
+        model.addAttribute("miniEvents", miniSessions.upcomingViews());
         return "index";
     }
 
+    /** The quick v1 inquiry form (creates an INQUIRY project). Kept for compatibility. */
     @PostMapping("/book")
     public String book(@RequestParam String name,
                        @RequestParam String email,
@@ -69,10 +86,78 @@ public class WebController {
         return "redirect:/confirmation/" + project.getId();
     }
 
+    // ---------- One-flow booking: package → slot → details → questionnaire → agreement → retainer ----------
+
+    @GetMapping("/book")
+    public String bookingFlow(Model model) {
+        populateBookingModel(model, new BookingForm());
+        return "book";
+    }
+
+    @PostMapping("/book/complete")
+    public String completeBooking(@ModelAttribute("form") BookingForm form, Model model) {
+        try {
+            Project project = bookingService.completeBooking(form);
+            return "redirect:/confirmation/" + project.getId();
+        } catch (BookingException e) {
+            populateBookingModel(model, form);
+            model.addAttribute("error", e.getMessage());
+            return "book";
+        }
+    }
+
+    private void populateBookingModel(Model model, BookingForm form) {
+        model.addAttribute("form", form);
+        model.addAttribute("packages", packages.findByActiveTrueOrderByBasePriceAsc());
+        model.addAttribute("miniEvents", miniSessions.upcomingViews());
+        model.addAttribute("terms", BookingService.STANDARD_TERMS);
+    }
+
     @GetMapping("/confirmation/{id}")
     public String confirmation(@PathVariable Long id, Model model) {
         model.addAttribute("project", projects.findById(id).orElseThrow());
         return "confirmation";
+    }
+
+    // ---------- Mini-session admin ----------
+
+    @GetMapping("/admin/minis")
+    public String minis(Model model) {
+        model.addAttribute("events", miniSessions.allViews());
+        model.addAttribute("packages", packages.findByActiveTrueOrderByBasePriceAsc());
+        return "minis";
+    }
+
+    @PostMapping("/admin/minis")
+    public String createMini(@RequestParam String title,
+                             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+                             @RequestParam @DateTimeFormat(pattern = "HH:mm") LocalTime startTime,
+                             @RequestParam @DateTimeFormat(pattern = "HH:mm") LocalTime endTime,
+                             @RequestParam int slotLengthMinutes,
+                             @RequestParam(defaultValue = "1") int capacityPerSlot,
+                             @RequestParam BigDecimal price,
+                             @RequestParam(required = false) String location,
+                             @RequestParam Long packageId,
+                             RedirectAttributes redirect) {
+        String error = null;
+        if (!endTime.isAfter(startTime)) {
+            error = "End time must be after start time.";
+        } else if (slotLengthMinutes <= 0) {
+            error = "Slot length must be at least 1 minute.";
+        } else if (capacityPerSlot < 1) {
+            error = "Capacity per slot must be at least 1.";
+        } else if (price == null || price.signum() < 0) {
+            error = "Price can't be negative.";
+        }
+        if (error != null) {
+            redirect.addFlashAttribute("miniError", error);
+            return "redirect:/admin/minis";
+        }
+        SessionPackage sessionPackage = packages.findById(packageId).orElseThrow();
+        miniEvents.save(new MiniSessionEvent(title, date, startTime, endTime,
+                slotLengthMinutes, capacityPerSlot, price, location, sessionPackage));
+        redirect.addFlashAttribute("miniSaved", "Mini-session event created.");
+        return "redirect:/admin/minis";
     }
 
     // ---------- Photographer dashboard ----------

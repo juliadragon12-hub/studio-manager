@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Book your session — Julia Drake Photography</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<header>
+    <h1><a th:href="@{/}">Julia Drake Photography</a></h1>
+    <nav>
+        <a th:href="@{/}">Book a session</a>
+        <a th:href="@{/dashboard}">Photographer dashboard</a>
+    </nav>
+</header>
+<main>
+    <h2>Book your session</h2>
+    <p>One flow, start to finish: pick a package, choose your time, answer a few questions, sign the agreement, and hold your date with a retainer.</p>
+
+    <ol class="steps">
+        <li>1 · Package</li>
+        <li>2 · Date &amp; time</li>
+        <li>3 · Your details</li>
+        <li>4 · Questionnaire</li>
+        <li>5 · Agreement</li>
+        <li>6 · Retainer</li>
+    </ol>
+
+    <div th:if="${error}" class="error" th:text="${error}">Something needs attention.</div>
+
+    <form th:action="@{/book/complete}" method="post" th:object="${form}">
+
+        <!-- Step 1: package -->
+        <section class="card">
+            <h3>Step 1 — Choose your package</h3>
+            <label for="packageId">Session package</label>
+            <select id="packageId" th:field="*{packageId}">
+                <option th:each="pkg : ${packages}" th:value="${pkg.id}" th:data-price="${pkg.basePrice}"
+                        th:text="${pkg.name + ' — from $' + pkg.basePrice}">Couples</option>
+            </select>
+            <p class="muted">Booking a mini session instead? Choose a slot in step 2 — the mini event's own price applies and this package choice is ignored.</p>
+        </section>
+
+        <!-- Step 2: date & time -->
+        <section class="card">
+            <h3>Step 2 — Pick a date &amp; time</h3>
+            <label class="radio-line">
+                <input type="radio" th:field="*{bookingType}" value="FULL">
+                Full session — request a date &amp; time
+            </label>
+            <div id="fullWhen">
+                <label for="sessionDateTime">Preferred date &amp; time</label>
+                <input id="sessionDateTime" type="datetime-local" th:field="*{sessionDateTime}">
+            </div>
+
+            <label class="radio-line">
+                <input type="radio" th:field="*{bookingType}" value="MINI" th:disabled="${miniEvents.isEmpty()}">
+                Mini session — pick an open slot
+            </label>
+            <div id="miniWhen">
+                <p th:if="${miniEvents.isEmpty()}" class="muted">No mini sessions are scheduled right now — check back soon.</p>
+                <div th:each="view : ${miniEvents}" class="mini-block">
+                    <h4 th:text="${view.event.title + ' — ' + #temporals.format(view.event.date, 'EEEE, MMMM d, yyyy')}">Autumn Mini Sessions</h4>
+                    <p class="muted">
+                        <span th:if="${view.event.location}" th:text="${view.event.location}">Location</span>
+                        · $<span th:text="${view.event.price}">75</span> per slot
+                        · <span th:text="${view.event.slotLengthMinutes}">20</span> minutes each
+                    </p>
+                    <label class="slot-option" th:each="slot : ${view.slots}">
+                        <input type="radio" th:field="*{miniSlot}" th:data-price="${view.event.price}"
+                               th:value="${view.event.id + '|' + #temporals.format(slot.start, 'yyyy-MM-dd''T''HH:mm')}"
+                               th:disabled="${slot.full}">
+                        <span th:text="${#temporals.format(slot.start, 'h:mm a')}">2:00 PM</span>
+                        <span th:if="${slot.full}" class="tag">Full</span>
+                        <span th:unless="${slot.full}" class="muted" th:text="${'(' + slot.remaining + ' left)'}">(1 left)</span>
+                    </label>
+                </div>
+            </div>
+        </section>
+
+        <!-- Step 3: client details -->
+        <section class="card">
+            <h3>Step 3 — Your details</h3>
+            <label for="name">Your name</label>
+            <input id="name" th:field="*{name}" required>
+
+            <label for="email">Email</label>
+            <input id="email" type="email" th:field="*{email}" required>
+
+            <label for="phone">Phone (optional)</label>
+            <input id="phone" type="tel" th:field="*{phone}">
+
+            <label for="location">Location idea (optional)</label>
+            <input id="location" th:field="*{location}" placeholder="e.g. Jennings prairie, downtown Grove City">
+
+            <label for="message">Anything you'd like us to know? (optional)</label>
+            <textarea id="message" th:field="*{message}"></textarea>
+        </section>
+
+        <!-- Step 4: questionnaire -->
+        <section class="card">
+            <h3>Step 4 — A few questions</h3>
+            <label for="sessionGoals">What are your goals for this session?</label>
+            <textarea id="sessionGoals" th:field="*{sessionGoals}" placeholder="e.g. relaxed, natural photos of the two of us"></textarea>
+
+            <label for="mustHaveShots">Must-have shots</label>
+            <textarea id="mustHaveShots" th:field="*{mustHaveShots}" placeholder="e.g. one with the dogs, a walking-away shot at sunset"></textarea>
+
+            <label for="comfortNotes">Comfort notes — anything that helps you feel at ease</label>
+            <textarea id="comfortNotes" th:field="*{comfortNotes}" placeholder="e.g. we feel awkward posing — candid prompts work best for us"></textarea>
+        </section>
+
+        <!-- Step 5: agreement -->
+        <section class="card">
+            <h3>Step 5 — Review &amp; sign the agreement</h3>
+            <div class="terms" th:text="${terms}">Agreement terms</div>
+
+            <label for="signerName">Your full name (this is your e-signature)</label>
+            <input id="signerName" th:field="*{signerName}">
+
+            <label class="check">
+                <input type="checkbox" th:field="*{agreeConsent}">
+                <span>I agree to the session agreement above, and I understand that typing my name counts as my signature.</span>
+            </label>
+        </section>
+
+        <!-- Step 6: retainer (demo) -->
+        <section class="card">
+            <h3>Step 6 — Hold your date with a retainer</h3>
+            <div class="demo-banner">
+                <strong>Demo checkout</strong> — no real payment is processed and no real money moves.
+                Do not enter real card details.
+            </div>
+            <p>
+                Retainer due today: <strong>$<span id="retainerAmount">50</span></strong>
+                (25% of the $<span id="priceEcho">200</span> session price).
+                The remaining balance is due on the day of your session.
+            </p>
+            <label for="demoCard">Card number (demo)</label>
+            <input id="demoCard" value="4242 4242 4242 4242" disabled>
+            <label for="demoCardBits">Expiry / CVC (demo)</label>
+            <input id="demoCardBits" value="12/34 · 424" disabled>
+            <button type="submit">Pay retainer &amp; book my session — demo</button>
+            <p class="muted">Submitting records a demo payment only. You'll get a booking reference on the next page.</p>
+        </section>
+    </form>
+</main>
+<footer>Studio Manager · demo data is fictional</footer>
+
+<script>
+    // Show the date picker that matches the chosen booking type, and keep
+    // the retainer line in sync with the selected package / mini slot.
+    // The server recomputes everything on submit — this is display only.
+    function selectedPrice() {
+        var type = document.querySelector('input[name="bookingType"]:checked');
+        if (type && type.value === 'MINI') {
+            var slot = document.querySelector('input[name="miniSlot"]:checked');
+            return slot ? parseFloat(slot.getAttribute('data-price')) : 0;
+        }
+        var sel = document.getElementById('packageId');
+        var opt = sel.options[sel.selectedIndex];
+        return opt ? parseFloat(opt.getAttribute('data-price')) : 0;
+    }
+    function refresh() {
+        var type = document.querySelector('input[name="bookingType"]:checked');
+        var isMini = type && type.value === 'MINI';
+        document.getElementById('fullWhen').style.display = isMini ? 'none' : '';
+        document.getElementById('miniWhen').style.display = isMini ? '' : 'none';
+        var price = selectedPrice();
+        document.getElementById('priceEcho').textContent = price ? price : '—';
+        document.getElementById('retainerAmount').textContent = price ? Math.round(price * 0.25) : '—';
+    }
+    document.querySelectorAll('input[name="bookingType"], input[name="miniSlot"]')
+        .forEach(function (el) { el.addEventListener('change', refresh); });
+    document.getElementById('packageId').addEventListener('change', refresh);
+    refresh();
+</script>
+</body>
+</html>

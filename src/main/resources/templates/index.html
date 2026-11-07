@@ -16,7 +16,7 @@
 </header>
 <main>
     <h2>Book a session</h2>
-    <p>Natural-light portraits in and around Grove City, PA. Pick a package below, tell us a little about what you have in mind, and we'll be in touch to confirm your date.</p>
+    <p>Natural-light portraits in and around Grove City, PA. Booking happens in one flow — package, date, a few questions, the agreement, and a retainer to hold your date.</p>
 
     <div class="package-grid">
         <div class="card" th:each="pkg : ${packages}">
@@ -26,35 +26,29 @@
         </div>
     </div>
 
-    <form th:action="@{/book}" method="post" class="card">
-        <h3>Request a booking</h3>
-        <label for="name">Your name</label>
-        <input id="name" name="name" required>
+    <div class="card" th:if="${!miniEvents.isEmpty()}">
+        <h3>Mini sessions — coming up</h3>
+        <div th:each="view : ${miniEvents}" class="mini-block">
+            <p>
+                <strong th:text="${view.event.title}">Autumn Mini Sessions</strong> —
+                <span th:text="${#temporals.format(view.event.date, 'EEEE, MMMM d, yyyy')}">Saturday</span>
+                <span th:if="${view.event.location}">· <span th:text="${view.event.location}">place</span></span>
+                <br>
+                <span class="muted">
+                    $<span th:text="${view.event.price}">75</span> ·
+                    <span th:text="${view.event.slotLengthMinutes}">20</span>-minute slots ·
+                    <span th:text="${view.totalRemaining()}">6</span> seats left
+                </span>
+            </p>
+        </div>
+        <p class="muted">Mini slots are picked inside the booking flow.</p>
+    </div>
 
-        <label for="email">Email</label>
-        <input id="email" name="email" type="email" required>
-
-        <label for="phone">Phone (optional)</label>
-        <input id="phone" name="phone" type="tel">
-
-        <label for="packageId">Session package</label>
-        <select id="packageId" name="packageId" required>
-            <option th:each="pkg : ${packages}" th:value="${pkg.id}"
-                    th:text="${pkg.name + ' — from $' + pkg.basePrice}">Couples</option>
-        </select>
-
-        <label for="sessionDateTime">Preferred date &amp; time</label>
-        <input id="sessionDateTime" name="sessionDateTime" type="datetime-local" required>
-
-        <label for="location">Location idea (optional)</label>
-        <input id="location" name="location" placeholder="e.g. Jennings prairie, downtown Grove City">
-
-        <label for="message">Anything you'd like us to know? (optional)</label>
-        <textarea id="message" name="message"></textarea>
-
-        <button type="submit">Send booking request</button>
-        <p class="muted">This sends an inquiry — your date is confirmed once we reply.</p>
-    </form>
+    <div class="card cta">
+        <h3>Ready when you are</h3>
+        <p>Six short steps and your date is held: package → date &amp; time → your details → questionnaire → agreement → retainer.</p>
+        <a class="btn" th:href="@{/book}">Start booking</a>
+    </div>
 </main>
 <footer>Studio Manager · demo data is fictional</footer>
 </body>

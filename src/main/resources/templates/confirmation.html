@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Booking received — Julia Drake Photography</title>
+    <title>Booking confirmed — Julia Drake Photography</title>
     <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
@@ -17,14 +17,45 @@
 <main>
     <div class="card">
         <h2>Thank you, <span th:text="${project.client.name}">friend</span>!</h2>
-        <p>Your booking request is in. Here's what we have:</p>
-        <ul>
-            <li><strong>Package:</strong> <span th:text="${project.sessionPackage.name}">Couples</span></li>
-            <li><strong>Preferred date:</strong> <span th:text="${#temporals.format(project.sessionDateTime, 'EEEE, MMMM d, yyyy h:mm a')}">date</span></li>
-            <li th:if="${project.location}"><strong>Location:</strong> <span th:text="${project.location}">place</span></li>
-            <li><strong>Price:</strong> from $<span th:text="${project.price}">200</span></li>
-        </ul>
-        <p>We'll email <span th:text="${project.client.email}">you</span> shortly to confirm your date and send the agreement and a short questionnaire.</p>
+
+        <!-- Completed one-flow booking -->
+        <div th:if="${project.bookingReference}">
+            <p>You're booked! Keep this reference for anything you need to ask us about:</p>
+            <p class="booking-ref" th:text="${project.bookingReference}">SM-2026-0007</p>
+            <ul>
+                <li><strong>Package:</strong> <span th:text="${project.sessionPackage.name}">Couples</span></li>
+                <li th:if="${project.miniEvent}"><strong>Mini session:</strong> <span th:text="${project.miniEvent.title}">Autumn Mini Sessions</span></li>
+                <li><strong>Session:</strong> <span th:text="${#temporals.format(project.sessionDateTime, 'EEEE, MMMM d, yyyy h:mm a')}">date</span></li>
+                <li th:if="${project.location}"><strong>Location:</strong> <span th:text="${project.location}">place</span></li>
+                <li><strong>Session price:</strong> $<span th:text="${project.price}">200</span></li>
+                <li th:if="${project.retainerPayment}">
+                    <strong>Retainer paid:</strong> $<span th:text="${project.retainerPayment.amount}">50</span>
+                    <span class="tag">DEMO — no real payment was processed</span>
+                </li>
+                <li th:if="${project.balanceDue != null}"><strong>Balance due on session day:</strong> $<span th:text="${project.balanceDue}">150</span></li>
+                <li th:if="${project.agreementSigned}">
+                    <strong>Agreement:</strong> signed by <span th:text="${project.agreement.signerName}">you</span>
+                </li>
+            </ul>
+            <h3>What happens next</h3>
+            <p>We'll email <span th:text="${project.client.email}">you</span> to confirm the details of your session.
+                Between now and then, start a little list of any must-have shots. On the day, just arrive a few minutes early,
+                relax, and be yourselves — and remember your remaining balance of
+                $<span th:text="${project.balanceDue}">150</span> is due at the session. See you soon!</p>
+        </div>
+
+        <!-- v1 inquiry (no completed flow) -->
+        <div th:unless="${project.bookingReference}">
+            <p>Your booking request is in. Here's what we have:</p>
+            <ul>
+                <li><strong>Package:</strong> <span th:text="${project.sessionPackage.name}">Couples</span></li>
+                <li><strong>Preferred date:</strong> <span th:text="${#temporals.format(project.sessionDateTime, 'EEEE, MMMM d, yyyy h:mm a')}">date</span></li>
+                <li th:if="${project.location}"><strong>Location:</strong> <span th:text="${project.location}">place</span></li>
+                <li><strong>Price:</strong> from $<span th:text="${project.price}">200</span></li>
+            </ul>
+            <p>We'll email <span th:text="${project.client.email}">you</span> shortly to confirm your date and send the agreement and a short questionnaire.</p>
+        </div>
+
         <a class="btn" th:href="@{/}">Book another session</a>
     </div>
 </main>

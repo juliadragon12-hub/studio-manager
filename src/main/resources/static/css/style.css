@@ -33,3 +33,21 @@ tr:hover td { background: #fdfaf6; }
 .pipeline span { padding: .3rem .7rem; border: 1px solid #c9bfae; border-radius: 999px; font-size: .85rem; }
 .pipeline span.done { background: #2b2b2b; color: #faf7f2; border-color: #2b2b2b; }
 footer { text-align: center; color: #999; font-size: .85rem; padding: 2rem; }
+
+/* One-flow booking */
+.steps { display: flex; gap: .4rem; flex-wrap: wrap; list-style: none; padding: 0; margin: 1rem 0; }
+.steps li { padding: .35rem .8rem; border: 1px solid #c9bfae; border-radius: 999px; font-size: .85rem; background: #fff; }
+.terms { white-space: pre-line; background: #faf7f2; border: 1px solid #e3dcd1; border-radius: 6px; padding: 1rem; font-size: .92rem; max-height: 16rem; overflow: auto; }
+.demo-banner { background: #fdf3d8; border: 1px solid #e3c878; color: #6b5510; padding: .7rem 1rem; border-radius: 4px; margin-bottom: .6rem; }
+.saved { background: #e8f5e8; border: 1px solid #a3cfa3; color: #1f5c1f; padding: .7rem 1rem; border-radius: 4px; }
+.radio-line { font-size: 1rem; margin-top: 1.2rem; }
+.radio-line input, .slot-option input { width: auto; }
+.slot-option { display: inline-block; margin: .25rem .6rem .25rem 0; font-size: .95rem; }
+label.check { display: flex; gap: .5rem; align-items: flex-start; font-size: .95rem; }
+label.check input { width: auto; margin-top: .3rem; }
+.mini-block { margin: .8rem 0; }
+.mini-block h4 { margin: .6rem 0 .2rem; font-weight: normal; }
+.booking-ref { font-size: 1.5rem; letter-spacing: .06em; color: #8a5a6b; }
+ul.summary { list-style: none; padding: 0; margin: 0; }
+ul.summary li { padding: .25rem 0; }
+.cta { text-align: center; }
